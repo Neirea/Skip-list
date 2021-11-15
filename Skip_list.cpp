@@ -2,7 +2,6 @@
 #include <random>
 #include <chrono>
 #include <iomanip>
-#include <cstring>
 #include <set>
 #define MAX_LEVEL 16
 
@@ -42,8 +41,6 @@ public:
 			: value(k), size(level)
 		{
 			next = new Node *[level];
-			//fills next with default values
-			memset(next, NULL, sizeof(Node *) * (level));
 		}
 		~Node()
 		{
@@ -94,7 +91,6 @@ public:
 
 		//stores nodes that will be updated
 		Node *update[MAX_LEVEL];
-		memset(update, 0, sizeof(Node *) * (MAX_LEVEL));
 
 		//searching for closest by value node
 		for (short i = newNodeLevel - 1; i >= 0; --i)
@@ -131,7 +127,6 @@ public:
 		//checks if it's false result which returns tail value
 		if (currentNode->value != searchValue)
 		{
-			//cout << "Wasn't able to find " << searchValue << endl;
 			return tail;
 		}
 		//otherwise return result of finding
@@ -143,7 +138,6 @@ public:
 		Node *currentNode = head;
 		//stores nodes that will be updated
 		Node *update[MAX_LEVEL];
-		memset(update, 0, sizeof(Node *) * (MAX_LEVEL));
 
 		//searching for closest by value node
 		for (short i = currentLevelMax - 1; i >= 0; --i)
@@ -160,7 +154,6 @@ public:
 		//check if if node exists
 		if (currentNode->value != searchValue)
 		{
-			//cout << "Wasn't able to find and erase " << searchValue << endl;
 			return;
 		}
 
