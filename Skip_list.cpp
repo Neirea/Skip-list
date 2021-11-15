@@ -1,27 +1,29 @@
 #include <iostream>
-#include <vector>
 #include <random>
 #include <chrono>
 #include <iomanip>
+#include <cstring>
 #include <set>
+#define MAX_LEVEL 16
 
 using namespace std;
 
 // random int number generator
-int genRandInt(int min, int max)
+short genRandInt(short min, short max)
 {
 	static default_random_engine ran;
 	return uniform_int_distribution<>{min, max}(ran);
 }
 /*rng generated number of levels for inserted node;
 flipping coin [0 or 1] so function returns number of
-levels to fill out(not more than maxLevels)*/
-int numberOfLevels(int current, int max)
+levels to fill out(not more than MAX_LEVELs)*/
+short numberOfLevels(short current)
 {
-	int i = 1;
-	//added check for currentLevelMax so it doesn't go more than 1 ahead of it and can't go above maxLevel
-	while (genRandInt(0, 1) != 0 && i <= current && i < max - 1)
+	short i = 1;
+	//added check for currentLevelMax so it doesn't go more than 1 ahead of it and can't go above MAX_LEVEL
+	while (genRandInt(0, 1) != 0 && i <= current && i < MAX_LEVEL)
 		++i;
+
 	return i;
 }
 
@@ -33,59 +35,69 @@ public:
 	struct Node
 	{
 		T value;
-		vector<Node *> next;
+		Node **next;
+		short size; // don't really need it but used for nice printing
 
-		Node(T k, int level)
-			: value(k)
+		Node(T &k, short level)
+			: value(k), size(level)
 		{
-			for (int i = 0; i < level; ++i)
-				next.push_back(nullptr);
+			next = new Node *[level];
+			//fills next with default values
+			memset(next, NULL, sizeof(Node *) * (level));
+		}
+		~Node()
+		{
+			delete[] next;
 		}
 	};
 	Skip_list()
 	{
-		//creating head pointer with min T value and maxlevel(16) of succesors
-		constexpr auto headValue = numeric_limits<T>::min();
-		head = new Node(headValue, maxLevel);
+		//creating head pointer with min T value and MAX_LEVEL of succesors
+		auto headValue = numeric_limits<T>::min();
+		head = new Node(headValue, MAX_LEVEL);
 
-		//creating tail pointer with max T value and maxlevel(16) of succesors
-		constexpr auto tailValue = numeric_limits<T>::max();
-		tail = new Node(tailValue, maxLevel);
+		//creating tail pointer with max T value and MAX_LEVEL of succesors
+		auto tailValue = numeric_limits<T>::max();
+		tail = new Node(tailValue, MAX_LEVEL);
 
 		//making connection from head to tail
-		for (int i = 0; i < maxLevel; ++i)
+		for (short i = 0; i < MAX_LEVEL; ++i)
 		{
 			head->next[i] = tail;
 		}
 	}
 	~Skip_list() noexcept
 	{
-		auto node = head;
-		while (node->next[0] != nullptr)
+		auto currentNode = head->next[0];
+		while (currentNode != tail)
 		{
-			auto tmp = node;
-			node = node->next[0];
-			delete tmp;
+			auto tmp = currentNode->next[0];
+			delete currentNode;
+			currentNode = tmp;
 		}
-		delete node;
+		delete head;
+		delete tail;
 	}
 
-	void insert(T searchValue)
+	void insert(T &searchValue)
 	{
 		Node *currentNode = head;
 
 		//rng roll if we go for 1 NodeLevel higher
-		int newNodeLevel = numberOfLevels(currentLevelMax, maxLevel);
+		short newNodeLevel = numberOfLevels(currentLevelMax);
 		//creating new node and checking if new node will have more levels than currentLevelMax
 		auto insertedNode = new Node(searchValue, newNodeLevel);
 		if (currentLevelMax < newNodeLevel)
+		{
 			currentLevelMax = newNodeLevel;
+		}
 
 		//stores nodes that will be updated
-		vector<Node *> update(newNodeLevel);
+		Node *update[MAX_LEVEL];
+		memset(update, 0, sizeof(Node *) * (MAX_LEVEL));
 
 		//searching for closest by value node
-		for (int i = newNodeLevel - 1; i >= 0; --i)
+		for (short i = newNodeLevel - 1; i >= 0; --i)
 		{
 			while (currentNode->next[i]->value < searchValue)
 			{
@@ -94,41 +106,47 @@ public:
 			update[i] = currentNode;
 		}
 		//inserting node and setting its connections up to current max level
-		for (int i = 0; i < newNodeLevel; ++i)
+		for (short i = 0; i < newNodeLevel; ++i)
 		{
 			insertedNode->next[i] = update[i]->next[i];
 			update[i]->next[i] = insertedNode;
 		}
 	}
 
-	Node *find(T searchValue) const
+	Node *find(T &searchValue) const
 	{
-		Skip_list::Node *currentNode = head;
+		Node *currentNode = head;
 
 		//searching for closest by value value node
-		for (int i = currentLevelMax - 1; i >= 0; --i)
+		for (short i = currentLevelMax - 1; i >= 0; --i)
 		{
-			while (currentNode->next[i] != nullptr && currentNode->next[i]->value < searchValue)
+			while (currentNode->next[i]->value < searchValue)
+			{
 				currentNode = currentNode->next[i];
+			}
 		}
 		//and moving to next node which should be a result of finding
 		currentNode = currentNode->next[0];
 
-		//checks if it's actually is
-		if (currentNode->value == searchValue)
-			return currentNode;
-		//otherwise return tail pointer
-		return tail;
+		//checks if it's false result which returns tail value
+		if (currentNode->value != searchValue)
+		{
+			//cout << "Wasn't able to find " << searchValue << endl;
+			return tail;
+		}
+		//otherwise return result of finding
+		return currentNode;
 	}
 
-	void erase(T searchValue)
+	void erase(T &searchValue)
 	{
 		Node *currentNode = head;
 		//stores nodes that will be updated
-		vector<Node *> update(currentLevelMax);
+		Node *update[MAX_LEVEL];
+		memset(update, 0, sizeof(Node *) * (MAX_LEVEL));
 
 		//searching for closest by value node
-		for (int i = currentLevelMax - 1; i >= 0; --i)
+		for (short i = currentLevelMax - 1; i >= 0; --i)
 		{
 			while (currentNode->next[i]->value < searchValue)
 			{
@@ -141,12 +159,21 @@ public:
 
 		//check if if node exists
 		if (currentNode->value != searchValue)
-			return;
-		for (int i = 0; i < currentNode->next.size(); ++i)
 		{
+			//cout << "Wasn't able to find and erase " << searchValue << endl;
+			return;
+		}
+
+		for (short i = 0; i < currentLevelMax; ++i)
+		{
+			if (update[i]->next[i] != currentNode)
+				break;
 			update[i]->next[i] = currentNode->next[i];
 		}
 		delete currentNode;
+		//check if we deleted node was highest level node
+		if (currentLevelMax > 0 && head->next[currentLevelMax - 1] == tail)
+			currentLevelMax--;
 	}
 
 	void print() const
@@ -156,7 +183,7 @@ public:
 		while (currentNode->next[0] != nullptr && currentNode->next[0] != tail)
 		{
 			cout << "value: " << currentNode->next[0]->value
-				 << " , levels: " << currentNode->next[0]->next.size();
+				 << " , levels: " << currentNode->size;
 
 			currentNode = currentNode->next[0];
 			cout << endl
@@ -168,71 +195,83 @@ private:
 	Node *head; // value equals min of T
 	Node *tail; // value equals max of T
 
-	// max number of extra levels
-	const int maxLevel = 16;
 	//  helper variable to get current max number of nodes levels
-	int currentLevelMax = 1;
+	short currentLevelMax = 1;
 };
 
-int main()
+// Simple test:
+void test()
 {
-	// Simple test:
-	int maxNumber = 99999;
+
+	int maxnumber = 99999;
+
+	int searchvalue = 0;
+	double time_taken = 0;
+	auto start = chrono::high_resolution_clock::now();
+	auto end = chrono::high_resolution_clock::now();
+
 	Skip_list<int> list1;
-	for (int i = 0; i < maxNumber; ++i)
+	for (int i = 0; i < maxnumber; ++i)
 	{
 		list1.insert(i);
 	}
 
-	//Testing time result of find and erase function for Skip List
-	auto start = chrono::high_resolution_clock::now();
+	//testing time result of find and erase function for skip list
+	start = chrono::high_resolution_clock::now();
 
-	int searchValue = maxNumber - 1;
-	for (int i = 0; i < maxNumber / 2; ++i)
+	searchvalue = maxnumber - 1;
+	for (int i = 0; i < maxnumber / 2; ++i)
 	{
-		list1.find(searchValue);
-		searchValue -= 2;
-	}
-	searchValue = maxNumber - 1;
-	for (int i = 0; i < maxNumber / 2; ++i)
-	{
-		list1.erase(searchValue);
-		searchValue -= 2;
+		list1.find(searchvalue);
+		searchvalue -= 2;
 	}
 
-	auto end = chrono::high_resolution_clock::now();
-	double time_taken = (1e-9) * chrono::duration_cast<chrono::nanoseconds>(end - start).count();
-	cout << "Time taken by Skip List is : " << fixed
+	searchvalue = maxnumber - 1;
+	for (int i = 0; i < maxnumber / 2; ++i)
+	{
+		list1.erase(searchvalue);
+		searchvalue -= 2;
+	}
+
+	end = chrono::high_resolution_clock::now();
+	time_taken = (1e-9) * chrono::duration_cast<chrono::nanoseconds>(end - start).count();
+	cout << "time taken by skip list is : " << fixed
 		 << time_taken << setprecision(9);
 	cout << " sec" << endl;
 
 	//---------------------------------------------------------------------------
 
 	set<int> list2;
-	for (int i = 0; i < maxNumber; ++i)
+	for (int i = 0; i < maxnumber; ++i)
 	{
 		list2.insert(i);
 	}
 
-	//Testing time result of find and erase function for set
+	//testing time result of find and erase function for set
 	start = chrono::high_resolution_clock::now();
 
-	searchValue = maxNumber - 1;
-	for (int i = 0; i < maxNumber / 2; ++i)
+	searchvalue = maxnumber - 1;
+	for (int i = 0; i < maxnumber / 2; ++i)
 	{
-		list2.find(searchValue);
-		searchValue -= 2;
+		list2.find(searchvalue);
+		searchvalue -= 2;
 	}
-	searchValue = maxNumber - 1;
-	for (int i = 0; i < maxNumber / 2; ++i)
+	searchvalue = maxnumber - 1;
+	for (int i = 0; i < maxnumber / 2; ++i)
 	{
-		list2.erase(searchValue);
-		searchValue -= 2;
+		list2.erase(searchvalue);
+		searchvalue -= 2;
 	}
 
 	end = chrono::high_resolution_clock::now();
 	time_taken = (1e-9) * chrono::duration_cast<chrono::nanoseconds>(end - start).count();
-	cout << "Time taken by Set is : " << fixed
+	cout << "time taken by set is : " << fixed
 		 << time_taken << setprecision(9);
 	cout << " sec" << endl;
+}
+
+int main()
+{
+	test();
+	return 0;
 }
