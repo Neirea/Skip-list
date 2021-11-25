@@ -2,7 +2,6 @@
 #include <random>
 #include <chrono>
 #include <iomanip>
-#include <set>
 #define MAX_LEVEL 16
 
 using namespace std;
@@ -229,36 +228,6 @@ void test()
 	end = chrono::high_resolution_clock::now();
 	time_taken = (1e-9) * chrono::duration_cast<chrono::nanoseconds>(end - start).count();
 	cout << "time taken by skip list is : " << fixed
-		 << time_taken << setprecision(9);
-	cout << " sec" << endl;
-
-	//---------------------------------------------------------------------------
-
-	set<int> list2;
-	for (int i = 0; i < maxnumber; ++i)
-	{
-		list2.insert(i);
-	}
-
-	//testing time result of find and erase function for set
-	start = chrono::high_resolution_clock::now();
-
-	searchvalue = maxnumber - 1;
-	for (int i = 0; i < maxnumber / 2; ++i)
-	{
-		list2.find(searchvalue);
-		searchvalue -= 2;
-	}
-	searchvalue = maxnumber - 1;
-	for (int i = 0; i < maxnumber / 2; ++i)
-	{
-		list2.erase(searchvalue);
-		searchvalue -= 2;
-	}
-
-	end = chrono::high_resolution_clock::now();
-	time_taken = (1e-9) * chrono::duration_cast<chrono::nanoseconds>(end - start).count();
-	cout << "time taken by set is : " << fixed
 		 << time_taken << setprecision(9);
 	cout << " sec" << endl;
 }
