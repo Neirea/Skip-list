@@ -1,5 +1,8 @@
-#include <iostream>
+// This Skip List implementation uses only <random> library for coinflips
+// Other libraries are for testing
 #include <random>
+//----------------
+#include <iostream>
 #include <chrono>
 #include <iomanip>
 #define MAX_LEVEL 16
