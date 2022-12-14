@@ -33,49 +33,35 @@ class Skip_list
 {
 
 public:
-	struct Node
+	class Node
 	{
+	public:
 		T value;
-		Node **next;
+		Node *next[MAX_LEVEL];
 		short size; // don't really need it but used for nice printing
 
 		Node(T &k, short level)
-			: value(k), size(level)
-		{
-			next = new Node *[level];
-		}
+			: value(k), size(level){}
 		~Node()
 		{
-			delete[] next;
+			delete next;
 		}
 	};
 	Skip_list()
 	{
 		//creating head pointer with min T value and MAX_LEVEL of succesors
 		auto headValue = numeric_limits<T>::min();
-		head = new Node(headValue, MAX_LEVEL);
+		head = new Node(headValue,MAX_LEVEL);
 
 		//creating tail pointer with max T value and MAX_LEVEL of succesors
 		auto tailValue = numeric_limits<T>::max();
-		tail = new Node(tailValue, MAX_LEVEL);
+		tail = new Node(tailValue,MAX_LEVEL);
 
 		//making connection from head to tail
 		for (short i = 0; i < MAX_LEVEL; ++i)
 		{
 			head->next[i] = tail;
 		}
-	}
-	~Skip_list() noexcept
-	{
-		auto currentNode = head->next[0];
-		while (currentNode != tail)
-		{
-			auto tmp = currentNode->next[0];
-			delete currentNode;
-			currentNode = tmp;
-		}
-		delete head;
-		delete tail;
 	}
 
 	void insert(T &searchValue)
@@ -85,7 +71,7 @@ public:
 		//rng roll if we go for 1 NodeLevel higher
 		short newNodeLevel = numberOfLevels(currentLevelMax);
 		//creating new node and checking if new node will have more levels than currentLevelMax
-		auto insertedNode = new Node(searchValue, newNodeLevel);
+		auto insertedNode = new Node(searchValue,newNodeLevel);
 		if (currentLevelMax < newNodeLevel)
 		{
 			currentLevelMax = newNodeLevel;
@@ -165,7 +151,6 @@ public:
 				break;
 			update[i]->next[i] = currentNode->next[i];
 		}
-		delete currentNode;
 		//check if we deleted node was highest level node
 		if (currentLevelMax > 0 && head->next[currentLevelMax - 1] == tail)
 			currentLevelMax--;
